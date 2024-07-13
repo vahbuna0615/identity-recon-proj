@@ -5,7 +5,7 @@ import { validate } from "class-validator";
 const validatePayload = async (obj: any) => {
   const payloadObj = plainToClass(ValidPayloadDTO, obj)
 
-  const errors = await validate(payloadObj, { whitelist: true})
+  const errors = await validate(payloadObj, { whitelist: true })
 
   return errors
 }

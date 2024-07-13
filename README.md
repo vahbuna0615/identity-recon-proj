@@ -1,73 +1,89 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Project: Identity Reconciliation
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Overview
+NestJS service with PostgreSQL and Prisma to handle identity reconciliation via a single endpoint.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Technologies
+- **NestJS**
+- **PostgreSQL**
+- **Prisma**
 
-## Description
+## Endpoint
+### `POST /identify`
+Receives a POST request to identify a contact.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+#### Request Body
+```json
+{
+  "email"?: "string",
+  "phoneNumber"?: "number"
+}
+```
+- `email`: (optional) Valid email.
+- `phoneNumber`: (optional) Valid phone number.
 
-## Installation
+#### Response
+Returns HTTP 200 with consolidated contact info.
 
-```bash
-$ npm install
+```json
+{
+  "contact": {
+    "primaryContactId": "number",
+    "emails": ["string"],
+    "phoneNumbers": ["string"],
+    "secondaryContactIds": ["number[]"]
+  }
+}
 ```
 
-## Running the app
+## Validation
+- The request body is validated using class-validator to ensure the email addresses and phone numbers are valid.
+- If validation fails, a BadRequestException (status code 400) is thrown with the errors in the response object.
+- If neither email nor phoneNumber is provided, a BadRequestException is thrown with the message: Please provide values for any one of the two - email or phoneNumber.
 
-```bash
-# development
-$ npm run start
+## Logic
+1. **Validation**: Validate request body.
+2. **Retrieving Contacts**:
+   - **Case 1**: No primary contact associated with either email or phone number.
+   - **Case 2**: Primary contact exists for both email and phone number (either the same or separate contacts).
+   - **Case 3**: Primary contact exists for either email or phone number.
+3. **Handling Cases**:
+   - If the combination of email and phoneNumber does not exist in the database at all, a primary contact is created.
+   - If the combination exists in the database as a primary or secondary contact, the primary contact's information is returned without creating new contacts.
+   - If either of the values exist in the database or both exist in separate contacts, a new secondary contact with the given combination is created.
 
-# watch mode
-$ npm run start:dev
+## Errors
+- **400 Bad Request**: On validation failure or missing `email`/`phoneNumber`.
 
-# production mode
-$ npm run start:prod
+## Examples
+
+### Valid Request
+```json
+{
+  "email": "example@example.com",
+  "phoneNumber": "+91 1234567890"
+}
 ```
 
-## Test
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+### Invalid Request
+```json
+{
+  "email": "invalid-email",
+  "phoneNumber": "invalid-phone-number"
+}
 ```
 
-## Support
+### Response Example
+```json
+{
+  "contact": {
+    "primaryContactId": 1,
+    "emails": ["example@example.com"],
+    "phoneNumbers": ["+91 1234567890"],
+    "secondaryContactIds": [2, 3]
+  }
+}
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+## Conclusion
+This service ensures efficient identity reconciliation by validating and consolidating contact information based on provided email and phone number. It handles various cases to either create new contacts or return existing primary contact information, maintaining data consistency and accuracy.

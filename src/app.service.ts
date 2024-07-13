@@ -6,21 +6,13 @@ import { DatabaseService } from './database/database.service';
 export class AppService {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async findOneUsingEmail(email: string) {
+  async findPrimaryContact(opt: any) {
+    const options = {
+      ...opt,
+      linkPrecedence: 'primary'
+    }
     return this.databaseService.contact.findFirst({
-      where: {
-        email: email,
-        linkPrecedence: 'primary'
-      }
-    })
-  }
-
-  async findOneUsingPhNumber(phoneNumber: string) {
-    return this.databaseService.contact.findFirst({
-      where: {
-        phoneNumber: phoneNumber,
-        linkPrecedence: 'primary'
-      }
+      where: options
     })
   }
 
