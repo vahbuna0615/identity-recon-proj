@@ -8,6 +8,9 @@ NestJS service with PostgreSQL and Prisma to handle identity reconciliation via 
 - **PostgreSQL**
 - **Prisma**
 
+## Deployed Url
+https://identity-recon-proj.onrender.com
+
 ## Endpoint
 ### `POST /identify`
 Receives a POST request to identify a contact.
